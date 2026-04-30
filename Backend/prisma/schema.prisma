@@ -7,13 +7,23 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+// Kategória tábla létrehozása
 
-// Termék tábla leírása (Relációs adatbázis)
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique 
+  products Product[]
+}
+
+// Termék tábla létrehozása 
+
 model Product {
   id          Int      @id @default(autoincrement())
   name        String
   description String?
   price       Float
   image       String?
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
   createdAt   DateTime @default(now())
 }
