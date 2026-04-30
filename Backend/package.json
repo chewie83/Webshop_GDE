@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+    "start": "node server.js",
+    "test": "jest"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -17,5 +18,9 @@
     "express": "^5.2.1",
     "prisma": "^6.19.3",
     "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2"
   }
 }
