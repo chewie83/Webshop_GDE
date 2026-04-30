@@ -22,6 +22,7 @@ model Product {
   name        String
   description String?
   price       Float
+  color       String   // új mező a termék egyik fontos jellemzője
   image       String?
   categoryId  Int
   category    Category @relation(fields: [categoryId], references: [id])
