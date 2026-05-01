@@ -11,6 +11,14 @@ import {
 
 const publishableKey =  process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
 
+const inputStyle = {
+  width: '100%',
+  padding: '10px',
+  marginBottom: '10px',
+  borderRadius: '4px',
+  border: '1px solid #ccc',
+  boxSizing: 'border-box' // Hogy ne lógjon ki a keretből
+};
 
 
 
@@ -20,14 +28,59 @@ function App() {
   const [activeFilter, setActiveFilter] = useState('Összes');
   const [cart, setCart] = useState([]);
 
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    price: '',
+    color: '',
+    image: '',
+    categoryId: 1
+  });
   const categories = ['Összes', 'PLA', 'ABS', 'PETG', 'ASA', 'TPU'];
-
   useEffect(() => {
     axios.get('http://localhost:5001/api/products')
       .then(response => setProducts(response.data))
       .catch(error => console.error("Hiba:", error));
   }, []);
-
+    const handleUpload = async (e) => {
+    e.preventDefault();
+    // Ellenőrzés
+    if (!newProduct.name || !newProduct.price) {
+      alert("Kérlek töltsd ki a nevet és az árat!");
+      return;
+    }
+    try {
+      const response = await axios.post('http://localhost:5001/api/products', {
+        name: newProduct.name,
+        price: parseInt(newProduct.price),
+        color: newProduct.color,
+        image: newProduct.image,
+        categoryId: parseInt(newProduct.categoryId)
+      });
+      if (response.status === 201) {
+        alert("Termék sikeresen hozzáadva!");
+        setShowAdminModal(false); // Ablak bezárása
+        
+        // Frissítjük a listát, hogy azonnal látszódjon az új termék
+        setProducts([...products, response.data]);
+      }
+    } catch (error) {
+      console.error("Hiba a feltöltésnél:", error);
+      alert("Hiba történt. Ellenőrizd a konzolt!");
+    }
+  };
+  const handleDelete = async (id) => {
+    if (window.confirm("Biztosan törölni szeretnéd ezt a terméket?")) {
+      try {
+        await axios.delete(`http://localhost:5001/api/products/${id}`);
+        setProducts(products.filter(p => p.id !== id));
+        alert("Termék törölve!");
+      } catch (error) {
+        console.error("Hiba a törlésnél:", error);
+        alert("Nem sikerült a törlés.");
+      }
+    }
+  };
   const addToCart = (product) => setCart([...cart, product]);
   const removeFromCart = (index) => setCart(cart.filter((_, i) => i !== index));
   const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
@@ -50,6 +103,12 @@ function App() {
         cart={cart}
         removeFromCart={removeFromCart}
         totalPrice={totalPrice}
+        showAdminModal={showAdminModal}
+        setShowAdminModal={setShowAdminModal}
+        handleUpload={handleUpload}
+        handleDelete={handleDelete}
+        setNewProduct={setNewProduct}
+        newProduct={newProduct}
       />
     </ClerkProvider>
   );
@@ -57,10 +116,14 @@ function App() {
 
 function MainLayout(props) {
   const { user } = useUser();
-  // ÍRD BE AZ EMAILEDET IDE:
+  // Admin emailek megadása
   const userEmail = user?.primaryEmailAddress?.emailAddress;
   const isAdmin = userEmail === "pandur.akos@gmail.com" || 
-                  userEmail === "MESZAROS.GYORGY@gde.hu"; 
+                  userEmail === "MESZAROS.GYORGY@gde.hu" ||
+                  userEmail === "ad5rk4@neptun.gde.hu";
+  const { 
+                    showAdminModal, setShowAdminModal, handleUpload, setNewProduct, newProduct, handleDelete 
+                  } = props;
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: 'Arial' }}>
       
@@ -77,6 +140,7 @@ function MainLayout(props) {
         top: 0,
         zIndex: 1000
       }}>
+      
         <h2 style={{ margin: 0 }}>📦 3D Filament Shop</h2>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -99,7 +163,9 @@ function MainLayout(props) {
           <SignedIn>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               {isAdmin && (
-                <button style={{ padding: '8px 15px', backgroundColor: '#ff9800', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
+                <button 
+                  onClick={() => setShowAdminModal(true)}
+                  style={{ padding: '8px 15px', backgroundColor: '#ff9800', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
                   Admin Felület
                 </button>
               )}
@@ -155,6 +221,24 @@ function MainLayout(props) {
                 >
                   Kosárba
                 </button>
+                {isAdmin && (
+                    <button 
+                        onClick={() => handleDelete(product.id)}
+                        style={{ 
+                          backgroundColor: '#ff4d4d', 
+                          color: 'white', 
+                          border: 'none', 
+                          padding: '8px 15px', 
+                          borderRadius: '5px',
+                          cursor: 'pointer',
+                          marginTop: '10px',
+                          width: '100%',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Törlés
+                    </button>
+                )}
               </div>
             ))}
           </div>
@@ -175,6 +259,44 @@ function MainLayout(props) {
           </div>
         )}
       </div>
+      {/* ADMIN MODAL ABLAK */}
+      {showAdminModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
+        }}>
+          <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', width: '450px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <h2 style={{ marginTop: 0, color: '#333' }}>📦 Új termék hozzáadása</h2>
+            <form onSubmit={handleUpload}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Termék neve:</label>
+              <input style={inputStyle} type="text" placeholder="pl. Galaxy Blue PLA" onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} required />
+              
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ár (Ft):</label>
+              <input style={inputStyle} type="number" placeholder="9500" onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} required />
+              
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Szín:</label>
+              <input style={inputStyle} type="text" placeholder="Kék" onChange={(e) => setNewProduct({...newProduct, color: e.target.value})} required />
+              
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Kép URL:</label>
+              <input style={inputStyle} type="text" placeholder="https://..." onChange={(e) => setNewProduct({...newProduct, image: e.target.value})} required />
+              
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Kategória:</label>
+              <select style={inputStyle} onChange={(e) => setNewProduct({...newProduct, categoryId: e.target.value})}>
+                <option value="1">PLA</option>
+                <option value="2">ABS</option>
+                <option value="3">PETG</option>
+                <option value="4">ASA</option>
+                <option value="5">TPU</option>
+              </select>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+                <button type="button" onClick={() => setShowAdminModal(false)} style={{ padding: '10px 20px', backgroundColor: '#e0e0e0', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Mégse</button>
+                <button type="submit" style={{ padding: '10px 25px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Termék mentése</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -50,7 +50,19 @@ app.post('/api/products', async (req, res) => {
     }
   });
 
-
+// Termék törlése ID alapján
+app.delete('/api/products/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      await prisma.product.delete({
+        where: { id: parseInt(id) },
+      });
+      res.json({ message: "Termék sikeresen törölve" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Hiba történt a törlés során" });
+    }
+  });
 
 
 if (process.env.NODE_ENV !== 'test') {
