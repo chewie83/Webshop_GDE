@@ -283,8 +283,8 @@ function MainLayout(props) {
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Kategória:</label>
               <select style={inputStyle} onChange={(e) => setNewProduct({...newProduct, categoryId: e.target.value})}>
                 <option value="1">PLA</option>
-                <option value="2">ABS</option>
-                <option value="3">PETG</option>
+                <option value="2">PETG</option>
+                <option value="3">ABS</option>
                 <option value="4">ASA</option>
                 <option value="5">TPU</option>
               </select>
